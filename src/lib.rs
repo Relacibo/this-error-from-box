@@ -3,10 +3,9 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    Data, DeriveInput, Fields, Ident, Path,
+    Data, DeriveInput, Fields,
     parse::{Parse, ParseStream},
     parse_macro_input,
-    punctuated::Punctuated,
 };
 
 struct WrapperArg {
@@ -62,7 +61,7 @@ pub fn this_error_from_box(attr: TokenStream, item: TokenStream) -> TokenStream 
             if type_path.path.segments.len() != wrapper_ident.segments.len() {
                 continue;
             }
-            
+
             let paths_equal = type_path
                 .path
                 .segments
