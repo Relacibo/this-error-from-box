@@ -2,10 +2,15 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse::{Parse, ParseStream}, parse_macro_input, Data, DeriveInput, Fields, Ident, Path};
+use syn::{
+    Data, DeriveInput, Fields, Ident, Path,
+    parse::{Parse, ParseStream},
+    parse_macro_input,
+    punctuated::Punctuated,
+};
 
 struct WrapperArg {
-    wrapper: Option<Ident>,
+    wrapper: Option<syn::Path>,
 }
 
 impl Parse for WrapperArg {
@@ -13,8 +18,10 @@ impl Parse for WrapperArg {
         if input.is_empty() {
             Ok(WrapperArg { wrapper: None })
         } else {
-            let wrapper: syn::Ident = input.parse()?;
-            Ok(WrapperArg { wrapper: Some(wrapper) })
+            let wrapper: syn::Path = input.parse()?;
+            Ok(WrapperArg {
+                wrapper: Some(wrapper),
+            })
         }
     }
 }
@@ -22,10 +29,7 @@ impl Parse for WrapperArg {
 #[proc_macro_attribute]
 pub fn this_error_from_box(attr: TokenStream, item: TokenStream) -> TokenStream {
     let WrapperArg { wrapper } = parse_macro_input!(attr as WrapperArg);
-    let wrapper_ident = wrapper
-        .as_ref()
-        .map(|w| w.to_string())
-        .unwrap_or_else(|| "Box".to_string());
+    let wrapper_ident = wrapper.unwrap_or_else(|| syn::parse_str("Box").unwrap());
     let input = parse_macro_input!(item as DeriveInput);
     let enum_name = &input.ident;
     let mut from_impls = Vec::new();
@@ -46,14 +50,30 @@ pub fn this_error_from_box(attr: TokenStream, item: TokenStream) -> TokenStream 
             let syn::Type::Path(type_path) = &field.ty else {
                 continue;
             };
-            let segments = &type_path.path.segments;
-            let last_segment = match segments.last() {
-                Some(seg) => seg,
-                None => continue,
+
+            let Some(last_segment) = type_path.path.segments.last() else {
+                continue;
             };
-            if last_segment.ident != wrapper_ident {
+
+            if type_path.path.leading_colon.is_some() ^ wrapper_ident.leading_colon.is_some() {
                 continue;
             }
+
+            if type_path.path.segments.len() != wrapper_ident.segments.len() {
+                continue;
+            }
+            
+            let paths_equal = type_path
+                .path
+                .segments
+                .iter()
+                .zip(wrapper_ident.segments.iter())
+                .all(|(a, b)| a.ident == b.ident);
+
+            if !paths_equal {
+                continue;
+            }
+
             let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments else {
                 continue;
             };
@@ -64,11 +84,10 @@ pub fn this_error_from_box(attr: TokenStream, item: TokenStream) -> TokenStream 
                 continue;
             };
             let variant_ident = &variant.ident;
-            let wrapper_path: Path = syn::parse_str(&wrapper_ident).unwrap();
             from_impls.push(quote! {
                 impl ::std::convert::From<#inner_ty> for #enum_name {
                     fn from(e: #inner_ty) -> Self {
-                        #enum_name::#variant_ident(#wrapper_path::from(e))
+                        #enum_name::#variant_ident(#wrapper_ident::from(e))
                     }
                 }
             });
