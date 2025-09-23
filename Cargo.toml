@@ -1,5 +1,6 @@
 [package]
 name = "this-error-from-box"
+description = "Generates From impls for boxed thiserror enum variants"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
