@@ -13,7 +13,7 @@ use this_error_from_box::this_error_from_box;
 pub enum MyError {
     Io(#[from] Box<std::io::Error>),
     Utf8(#[from] Box<std::string::FromUtf8Error>),
-    // andere Varianten ...
+    // other variants ...
 }
 ```
 
