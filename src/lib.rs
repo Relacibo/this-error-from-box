@@ -12,47 +12,53 @@ pub fn this_error_from_box(_attr: TokenStream, item: TokenStream) -> TokenStream
 
     if let Data::Enum(data_enum) = &input.data {
         for variant in &data_enum.variants {
-            if let Fields::Unnamed(fields) = &variant.fields {
-                if fields.unnamed.len() == 1 {
-                    let field = &fields.unnamed[0];
-                    let mut has_from = false;
-                    for attr in &field.attrs {
-                        if attr.path().is_ident("from") {
-                            has_from = true;
-                            break;
-                        }
-                    }
-                    if has_from {
-                        // Check if type is Box<T>
-                        if let syn::Type::Path(type_path) = &field.ty {
-                            let segments = &type_path.path.segments;
-                            // Check if the path is really std::boxed::Box or alloc::boxed::Box
-                            let is_std_box = {
-                                let segs: Vec<_> = type_path.path.segments.iter().map(|s| s.ident.to_string()).collect();
-                                (segs == ["std", "boxed", "Box"])
-                                    || (segs == ["alloc", "boxed", "Box"])
-                                    || (segs == ["Box"]) // fallback for just Box
-                            };
-                            if is_std_box {
-                                if let syn::PathArguments::AngleBracketed(args) = &segments.last().unwrap().arguments {
-                                    if args.args.len() == 1 {
-                                        if let syn::GenericArgument::Type(inner_ty) = &args.args[0] {
-                                            let variant_ident = &variant.ident;
-                                            from_impls.push(quote! {
-                                                impl ::std::convert::From<#inner_ty> for #enum_name {
-                                                    fn from(e: #inner_ty) -> Self {
-                                                        #enum_name::#variant_ident(::std::boxed::Box::new(e))
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            let Fields::Unnamed(fields) = &variant.fields else {
+                continue;
+            };
+
+            if fields.unnamed.len() != 1 {
+                continue;
+            }
+
+            let field = &fields.unnamed[0];
+            let has_from = field.attrs.iter().any(|attr| attr.path().is_ident("from"));
+
+            if !has_from {
+                continue;
+            }
+
+            let syn::Type::Path(type_path) = &field.ty else {
+                continue;
+            };
+            let path = &type_path.path;
+            if path.leading_colon.is_some() || path.segments.len() != 1 {
+                continue;
+            }
+            
+            let ident = &path.segments[0].ident;
+
+            if ident != "Box" {
+                continue;
+            }
+            let segments = &type_path.path.segments;
+            let syn::PathArguments::AngleBracketed(args) = &segments[0].arguments else {
+                continue;
+            };
+            if args.args.len() != 1 {
+                continue;
+            }
+            let syn::GenericArgument::Type(inner_ty) = &args.args[0] else {
+                continue;
+            };
+
+            let variant_ident = &variant.ident;
+            from_impls.push(quote! {
+                impl ::std::convert::From<#inner_ty> for #enum_name {
+                    fn from(e: #inner_ty) -> Self {
+                        #enum_name::#variant_ident(#ident::from(e))
                     }
                 }
-            }
+            });
         }
     }
 
