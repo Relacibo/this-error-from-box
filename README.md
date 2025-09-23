@@ -1,12 +1,6 @@
 # this-error-from-box (vibe-coded)
 
-Dieses Crate bietet ein Procedural Macro, das automatisch `From<T>`-Implementierungen für Error-Enums generiert, die mit `#[this-error-from-box]` annotiert sind und Varianten mit `#[from] Box<T>` besitzen.
-
-## Beispiel
-
-# this-error-from-box
-
-This crate provides a procedural macro that automatically generates `From<T>` implementations for error enums annotated with `#[this_error_from_box]` and variants containing `#[from] Box<T>`.
+This crate provides a procedural macro for Rust that automatically generates `From<T>` implementations for error enums annotated with `#[this_error_from_box]` and variants containing `#[from] Box<T>`.
 
 ## Example
 
