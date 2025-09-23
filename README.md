@@ -2,6 +2,8 @@
 
 This crate provides a procedural macro for Rust that automatically generates `From<T>` implementations for error enums annotated with `#[this_error_from_box]` and variants containing `#[from] Box<T>`.
 
+You can optionally specify a custom wrapper type as an argument, e.g. `#[this_error_from_box(MyWrapper)]`. If omitted, `Box` is used by default.
+
 ## Example
 
 ```rust

@@ -1,13 +1,14 @@
 use thiserror::Error;
 use this_error_from_box::this_error_from_box;
+use std::rc::Rc;
 
 #[derive(Error, Debug)]
-#[this_error_from_box]
+#[this_error_from_box(Rc)]
 pub enum MyError {
     #[error("Io error")]
-    Io(#[from] Box<std::io::Error>),
+    Io(#[from] Rc<std::io::Error>),
     #[error("Utf8 error")]
-    Utf8(#[from] Box<std::string::FromUtf8Error>),
+    Utf8(#[from] Rc<std::string::FromUtf8Error>),
     #[error("Other")]
     Other,
 }
