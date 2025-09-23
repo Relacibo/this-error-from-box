@@ -35,13 +35,8 @@ impl From<std::string::FromUtf8Error> for MyError {
 
 ## Installation
 
-Add to your `Cargo.toml`:
-
-```toml
-[dependencies]
-thiserror = "*"
-this-error-from-box = { git = "https://github.com/Relacibo/this-error-from-box.git" }
-
+```bash
+cargo add this-error-from-box
 ```
 
 ## Notes
