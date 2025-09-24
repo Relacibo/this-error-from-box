@@ -24,13 +24,13 @@ This will automatically generate the following implementations:
 ```rust
 impl From<std::io::Error> for MyError {
     fn from(e: std::io::Error) -> Self {
-        MyError::Io(Box::new(e))
+        MyError::Io(Box::from(e))
     }
 }
 
 impl From<std::string::FromUtf8Error> for MyError {
     fn from(e: std::string::FromUtf8Error) -> Self {
-        MyError::Utf8(Box::new(e))
+        MyError::Utf8(Box::from(e))
     }
 }
 ```
